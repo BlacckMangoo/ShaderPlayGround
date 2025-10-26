@@ -1,56 +1,77 @@
-#include <vector>
-#include <unordered_map>
+#include "../include/NodeGraph.h"
+#include <iostream>
 #include "../include/Utils.h"
 
-enum NodeType {
-    ADD,
-    SUBTRACT,
-    MULTIPLY,
-    DIVIDE
-};
 
-struct Pin {
 
-    Pin( int const id , bool const  isInput ) : id(id), isInput(isInput) {};
-    int id ;
-    bool isInput ;
-};
+void NodeGraph::AddEdge(int fromPinId, int toPinId)
+{
+  Pin input_pin = pinDatabase[fromPinId];
+  Pin output_pin = pinDatabase[toPinId];
 
-struct Node {
-
-    Node(const std::vector<int>& inputPins, const std::vector<int>& outputPins, const NodeType type , int id = -1) {
-        this->type = type;
-        this->id = 1 ;
-        for (const auto& pin_id : inputPins) {
-            Pin pin(GenerateId(), true);
-            input_pins.push_back(pin);
-        }
-        for (const auto& pin_id : outputPins) {
-            Pin pin(pin_id, true);
-            input_pins.push_back(pin);
-        }
+    if ( input_pin.type != PinType::INPUT || output_pin.type != PinType::OUTPUT) {
+        std::cerr << "Error: Invalid pin types for edge creation. fromPinId should be OUTPUT and toPinId should be INPUT.\n";
+        return;
     }
 
-    std::vector<Pin> input_pins;
-    std::vector<Pin> output_pins;
-    NodeType type;
-    int id{} ;
-    float value = 0.0f;
+    if ( input_pin.parentNodeId == output_pin.parentNodeId) {
+        std::cerr << "Error: Cannot connect pins from the same node. fromPinId and toPinId belong to the same node.\n";
+        return;
+    }
 
-};
+    adjList[fromPinId].push_back(toPinId);
+}
 
-struct Link {
-     int input_pin_id;
-     int output_pin_id;
-    int id ;
-};
+void NodeGraph::AddNode( int noOfInputPins, int noOfOutputPins)
+{
+    int nodeId = GenerateId();
+    Node node(nodeId, noOfInputPins, noOfOutputPins, pinDatabase);
+    nodes[nodeId] = std::move(node);
+    for (auto pinId : nodes[nodeId].inputPins) {
+        adjList[pinId] = {}; // Initialize adjacency list for pin . will be populated by Add Edge
+    }
+    for (auto pinId : nodes[nodeId].outputPins) {
+        adjList[pinId] = {};
+    }
+}
 
 
-class NodeGraph {
+void NodeGraph::PrintAllData() const {
 
-public:
-    std::unordered_map<int, Node> nodes;
-    std::unordered_map<int, Pin> pins;
-    std::unordered_map<int, Link> links;
 
-};
+    // node data
+
+
+    for ( auto& node: nodes) {
+        std::cout << "Node ID: " << node.first << "\n";
+        std::cout << " Input Pins: ";
+        for (const auto pinId : node.second.inputPins) {
+            std::cout << pinId << " ";
+        }
+        std::cout << "\n Output Pins: ";
+        for (const auto pinId : node.second.outputPins) {
+            std::cout << pinId << " ";
+        }
+        std::cout << "\n";
+    }
+    std :: cout << "\n";
+
+    // pin data base
+
+    for ( auto& pin : pinDatabase) {
+        std::cout << "Pin ID: " << pin.first << ", Type: " << (pin.second.type == PinType::INPUT ? "INPUT" : "OUTPUT")
+                  << ", Parent Node ID: " << pin.second.parentNodeId << "\n";
+    }
+
+    // adjacency list
+
+    std :: cout << "\n";
+
+    for ( auto & adj : adjList) {
+        std::cout << "Pin ID: " << adj.first << " -> Connected Pins: ";
+        for ( const auto connectedPinId : adj.second) {
+            std::cout << connectedPinId << " ";
+        }
+        std::cout << "\n";
+    }
+}

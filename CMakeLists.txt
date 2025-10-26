@@ -49,7 +49,12 @@ add_executable(${PROJECT_NAME} src/main.cpp
         include/Utils.h
         include/Utils.h
         include/UiManager.h
-        src/UiManager.cpp)
+        src/UiManager.cpp
+        include/Pin.h
+        src/Pin.cpp
+        include/Node.h
+        src/Node.cpp
+        include/NodeGraph.h)
 
 # -------------------
 # ImGui sources

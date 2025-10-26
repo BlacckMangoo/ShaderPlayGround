@@ -14,8 +14,10 @@ public:
 
     static void  GLFWInit();
     void CreateWindow( std::string_view title);
+    void RenderFrame() const;
 
-    [[nodiscard]] GLFWwindow*  get_GLFW_Window() const { return m_window; }
+    [[nodiscard]] bool isOpen() const                      { return !glfwWindowShouldClose(m_window); }
+    [[nodiscard]] GLFWwindow*  get_GLFW_Window() const     { return m_window; }
 
 
 private:
