@@ -1,7 +1,7 @@
 #include "../include/NodeGraph.h"
 #include <iostream>
 #include "../include/Utils.h"
-
+#include "imnodes.h"
 
 
 void NodeGraph::AddEdge(int fromPinId, int toPinId)
@@ -9,7 +9,7 @@ void NodeGraph::AddEdge(int fromPinId, int toPinId)
   Pin input_pin = pinDatabase[fromPinId];
   Pin output_pin = pinDatabase[toPinId];
 
-    if ( input_pin.type != PinType::INPUT || output_pin.type != PinType::OUTPUT) {
+    if ( input_pin.type != PinType::OUTPUT || output_pin.type != PinType::INPUT) {
         std::cerr << "Error: Invalid pin types for edge creation. fromPinId should be OUTPUT and toPinId should be INPUT.\n";
         return;
     }
@@ -34,6 +34,8 @@ void NodeGraph::AddNode( int noOfInputPins, int noOfOutputPins, ImVec2 position 
     for (auto pinId : nodes[nodeId].outputPins) {
         adjList[pinId] = std::vector<int>();
     }
+
+
 }
 
 

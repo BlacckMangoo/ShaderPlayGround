@@ -15,6 +15,8 @@ public:
     std::vector<int> inputPins;
     std::vector<int> outputPins;
 
+    mutable bool initialized = false;
+
     mutable ImVec2 position = ImVec2(0,0);
 
 };

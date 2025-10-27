@@ -10,10 +10,7 @@ public:
 
      void Init(EditorContext* ctx) { this->m_ctx = ctx; UiInit() ;}
 
-     static void AddNode(const Node &node);
-     static void AddInputPin(int nodeId);
-     static void AddOutputPin(int nodeId);
-
+     static void AddNode(Node &node);
      void UiInit();
     void RenderGraph();
 

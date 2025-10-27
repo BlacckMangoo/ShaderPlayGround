@@ -5,6 +5,7 @@
 #include <imgui_impl_opengl3.h>
 #include <imnodes.h>
 
+#include "imgui_internal.h"
 #include "../include/EditorContext.h"
 #include "../include/Utils.h"
 
@@ -51,62 +52,92 @@ void UiManager::ImguiCleanUp() {
     ImGui::DestroyContext();
 }
 
-void UiManager::AddInputPin(int nodeId) {
-    ImNodes::BeginInputAttribute(nodeId);
-    ImGui::Text("Input Pin");
-    ImNodes::EndInputAttribute();
-}
-
-void UiManager::AddOutputPin(int nodeId) {
-    ImNodes::BeginOutputAttribute(nodeId);
-    ImGui::Text("Output Pin");
-    ImNodes::EndOutputAttribute();
-}
 
 
-void UiManager::AddNode(const Node& node) {
-    ImNodes::SetNodeScreenSpacePos(node.nodeId,node.position);
+
+void UiManager::AddNode(Node& node)
+{
+    if (!node.initialized)
+    {
+        ImNodes::SetNodeScreenSpacePos(node.nodeId, node.position);
+        node.initialized = true;
+    }
 
     ImNodes::BeginNode(node.nodeId);
 
-    for ( auto& inputPinId: node.inputPins) {
-        AddInputPin(inputPinId);
+    // Node title bar
+    ImNodes::BeginNodeTitleBar();
+    ImGui::Text("Node %d", node.nodeId);
+    ImNodes::EndNodeTitleBar();
+
+    // Inputs
+    for (size_t i = 0; i < node.inputPins.size(); ++i)
+    {
+        std::string label = "In " + std::to_string(i + 1);
+        ImNodes::BeginInputAttribute(node.inputPins[i]);
+        ImGui::TextUnformatted(label.c_str());
+        ImNodes::EndInputAttribute();
     }
 
-    for ( auto& outputPin: node.outputPins) {
-        AddOutputPin(outputPin);
+    // Outputs
+    for (size_t i = 0; i < node.outputPins.size(); ++i)
+    {
+        std::string label = "Out " + std::to_string(i + 1);
+        ImNodes::BeginOutputAttribute(node.outputPins[i]);
+        ImGui::Indent(40.0f); // visually offset output pins
+        ImGui::TextUnformatted(label.c_str());
+        ImNodes::EndOutputAttribute();
     }
 
     ImNodes::EndNode();
 
+    // Sync position after dragging
+    node.position = ImNodes::GetNodeScreenSpacePos(node.nodeId);
 }
 
+
 void UiManager::RenderGraph() {
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
 
 
-    ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
-    const ImGuiViewport* viewport = ImGui::GetMainViewport();
-    ImGui::SetNextWindowPos(viewport->Pos);
-    ImGui::SetNextWindowSize(viewport->Size);
-    ImGui::SetNextWindowViewport(viewport->ID);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-    window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse;
-    window_flags |= ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
-    window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
 
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-    ImGui::Begin("DockSpace", nullptr, window_flags);
-    ImGui::PopStyleVar(3);
+ // set up docking space
+    {
+        ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
+        const ImGuiViewport* viewport = ImGui::GetMainViewport();
+        ImGui::SetNextWindowPos(viewport->Pos);
+        ImGui::SetNextWindowSize(viewport->Size);
+        ImGui::SetNextWindowViewport(viewport->ID);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+        window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse;
+        window_flags |= ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+        window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+        ImGui::Begin("DockSpace", nullptr, window_flags);
+        ImGui::PopStyleVar(3);
+        const ImGuiID dock_space_id = ImGui::GetID("MyDockSpace");
+        ImGui::DockSpace(dock_space_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
+
+        static bool first_time = true;
+        if (first_time) {
+            first_time = false;
 
 
-    const ImGuiID dock_space_id = ImGui::GetID("MyDockSpace");
-    ImGui::DockSpace(dock_space_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
+            ImGuiID dock_id_left, dock_id_right;
+            ImGui::DockBuilderSplitNode(dock_space_id, ImGuiDir_Left, 0.5f, &dock_id_left, &dock_id_right);
+            ImGui::DockBuilderDockWindow("node editor", dock_id_left);
+            ImGui::DockBuilderDockWindow("shader output", dock_id_right);
 
-    ImGui::End();
+            ImGui::DockBuilderFinish(dock_space_id);
+        }
+
+
+
+        ImGui::End();
+    }
+
+
     ImGui::Begin("node editor");
     ImNodes::BeginNodeEditor();
 
@@ -121,21 +152,75 @@ void UiManager::RenderGraph() {
         }
     }
 
-    if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+    bool openPopup = ImNodes::IsEditorHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right);
+    ImNodes::EndNodeEditor();
+
+
+    int stAtrr , endAttr ;
+    if ( ImNodes::IsLinkCreated(&stAtrr, &endAttr)) {
+        m_ctx->graph.AddEdge(stAtrr, endAttr);
+        m_ctx->graph.PrintAllData();
+    }
+
+
+    if (openPopup)
         ImGui::OpenPopup("GraphPopup");
 
     if (ImGui::BeginPopup("GraphPopup")) {
-        if (ImGui::MenuItem("Add Node")) { m_ctx->graph.AddNode(1,4,ImGui::GetMousePos()) ;}
+
+        // --- Style overrides ---
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(12, 12));
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8, 6));
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(6, 4));
+
+        ImGui::Text("Create Node");
+        ImGui::Separator();
+
+        static int numInputs = 1;
+        static int numOutputs = 1;
+
+        ImGui::InputInt("Inputs", &numInputs);
+        ImGui::InputInt("Outputs", &numOutputs);
+
+        numInputs = std::max(0, numInputs);
+        numOutputs = std::max(0, numOutputs);
+
+        if (ImGui::Button("Add Node", ImVec2(-1, 0))) {  // full width button
+            ImVec2 pos = ImGui::GetMousePos();
+            m_ctx->graph.AddNode(numInputs, numOutputs, pos);
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::PopStyleVar(3);
         ImGui::EndPopup();
     }
 
 
-    ImNodes::EndNodeEditor();
+    ImGui::End();
+
+    ImGui::Begin("shader output");
+    ImGui::TextWrapped("This is where the generated shader code would be displayed.");
+
+     const float window_width = ImGui::GetContentRegionAvail().x;
+    const float window_height = ImGui::GetContentRegionAvail().y;
+
+    ImVec2 pos = ImGui::GetCursorScreenPos();
+
+    glViewport(0, 0, window_width, window_height);
+    ImGui::GetWindowDrawList()->AddImage(
+            (void *)m_ctx->texture_id,
+            ImVec2(pos.x, pos.y),
+            ImVec2(pos.x + window_width, pos.y + window_height),
+            ImVec2(0, 1),
+            ImVec2(1, 0)
+        );
 
     ImGui::End();
-    // Rendering
     ImGui::Render();
-}
+
+
+
+};
 
 
 

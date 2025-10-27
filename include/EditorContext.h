@@ -18,4 +18,6 @@ public:
      NodeGraph& graph;
      UiManager& uiManager;
 
+    unsigned int texture_id;
+
 };
