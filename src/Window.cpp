@@ -1,11 +1,10 @@
-//
-// Created by lenovo on 25-10-2025.
-//
 
 #include "../include/Window.h"
 #include <iostream>
 #include <imgui.h>
 #include <imgui_impl_opengl3.h>
+
+
 Window::~Window() {
     glfwDestroyWindow(m_window);
     glfwTerminate();

@@ -22,16 +22,17 @@ void NodeGraph::AddEdge(int fromPinId, int toPinId)
     adjList[fromPinId].push_back(toPinId);
 }
 
-void NodeGraph::AddNode( int noOfInputPins, int noOfOutputPins)
+void NodeGraph::AddNode( int noOfInputPins, int noOfOutputPins, ImVec2 position )
 {
     int nodeId = GenerateId();
-    Node node(nodeId, noOfInputPins, noOfOutputPins, pinDatabase);
-    nodes[nodeId] = std::move(node);
+
+    Node node(nodeId, noOfInputPins, noOfOutputPins, pinDatabase,position);
+    nodes[nodeId] = node;
     for (auto pinId : nodes[nodeId].inputPins) {
-        adjList[pinId] = {}; // Initialize adjacency list for pin . will be populated by Add Edge
+        adjList[pinId] = std::vector<int>(); // Initialize adjacency list for pin - will be populated by AddEdge
     }
     for (auto pinId : nodes[nodeId].outputPins) {
-        adjList[pinId] = {};
+        adjList[pinId] = std::vector<int>();
     }
 }
 
@@ -40,8 +41,6 @@ void NodeGraph::PrintAllData() const {
 
 
     // node data
-
-
     for ( auto& node: nodes) {
         std::cout << "Node ID: " << node.first << "\n";
         std::cout << " Input Pins: ";

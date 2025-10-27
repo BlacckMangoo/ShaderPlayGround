@@ -5,8 +5,8 @@
 #include "../include/Node.h"
 #include "../include/Utils.h" // For GenerateId()
 
-Node::Node(const int nodeId, const int noOfInputPins, const int noOfOutputPins, std::unordered_map<int, Pin>& pinDatabase)
-    : nodeId(nodeId)
+Node::Node(const int nodeId, const int noOfInputPins, const int noOfOutputPins, std::unordered_map<int, Pin>& pinDatabase, ImVec2 position)
+    : nodeId(nodeId), position(position) , inputPins(noOfInputPins), outputPins(noOfOutputPins)
 {
     for (int i = 0; i < noOfInputPins; ++i) {
         int id = GenerateId();

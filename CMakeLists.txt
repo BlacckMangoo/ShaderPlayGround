@@ -54,7 +54,10 @@ add_executable(${PROJECT_NAME} src/main.cpp
         src/Pin.cpp
         include/Node.h
         src/Node.cpp
-        include/NodeGraph.h)
+        include/NodeGraph.h
+        include/Command.h
+        include/EditorContext.h
+)
 
 # -------------------
 # ImGui sources
