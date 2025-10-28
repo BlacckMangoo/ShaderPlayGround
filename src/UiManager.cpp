@@ -206,13 +206,13 @@ void UiManager::RenderGraph() {
 
     ImVec2 pos = ImGui::GetCursorScreenPos();
 
-    glViewport(0, 0, window_width, window_height);
+    // Display the texture (note: removed glViewport call as it interferes with framebuffer rendering)
     ImGui::GetWindowDrawList()->AddImage(
-            (void *)m_ctx->texture_id,
+            (void *)m_ctx->getTextureId(),  // Use the getter method instead of direct access
             ImVec2(pos.x, pos.y),
             ImVec2(pos.x + window_width, pos.y + window_height),
-            ImVec2(0, 1),
-            ImVec2(1, 0)
+            ImVec2(0, 0),  // Fixed: UV coordinates (top-left)
+            ImVec2(1, 1)   // Fixed: UV coordinates (bottom-right)
         );
 
     ImGui::End();

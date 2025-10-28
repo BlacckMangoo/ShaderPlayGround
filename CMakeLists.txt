@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 4.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 project(ShaderPlayground LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -27,42 +27,28 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(imgui)
 
 # -------------------
+# imnodes (fetch source only, no CMakeLists.txt)
+# -------------------
+FetchContent_Declare(
+        imnodes
+        GIT_REPOSITORY https://github.com/Nelarius/imnodes.git
+        GIT_TAG        master
+)
+FetchContent_GetProperties(imnodes)
+if(NOT imnodes_POPULATED)
+    FetchContent_Populate(imnodes)
+endif()
+
+# -------------------
 # GLAD (local)
 # -------------------
 add_library(glad external/glad/src/glad.c)
 target_include_directories(glad PUBLIC external/glad/include)
 
 # -------------------
-# imnodes (just sources, no find_package)
+# ImGui library
 # -------------------
-add_library(imnodes STATIC ${imnodes_SOURCE_DIR}/imnodes.cpp)
-target_include_directories(imnodes PUBLIC ${imnodes_SOURCE_DIR} ${imgui_SOURCE_DIR})
-
-# -------------------
-# Create executable
-# -------------------
-add_executable(${PROJECT_NAME} src/main.cpp
-        src/Window.cpp
-        include/Window.h
-        include/Window.h
-        src/NodeGraph.cpp
-        include/Utils.h
-        include/Utils.h
-        include/UiManager.h
-        src/UiManager.cpp
-        include/Pin.h
-        src/Pin.cpp
-        include/Node.h
-        src/Node.cpp
-        include/NodeGraph.h
-        include/Command.h
-        include/EditorContext.h
-)
-
-# -------------------
-# ImGui sources
-# -------------------
-target_sources(${PROJECT_NAME} PRIVATE
+add_library(imgui_lib STATIC
         ${imgui_SOURCE_DIR}/imgui.cpp
         ${imgui_SOURCE_DIR}/imgui_draw.cpp
         ${imgui_SOURCE_DIR}/imgui_tables.cpp
@@ -70,22 +56,58 @@ target_sources(${PROJECT_NAME} PRIVATE
         ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
         ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
 )
+target_include_directories(imgui_lib PUBLIC
+        ${imgui_SOURCE_DIR}
+        ${imgui_SOURCE_DIR}/backends
+)
+target_link_libraries(imgui_lib PUBLIC glfw glad)
+
+# -------------------
+# imnodes library
+# -------------------
+add_library(imnodes STATIC
+        ${imnodes_SOURCE_DIR}/imnodes.cpp
+)
+target_include_directories(imnodes PUBLIC
+        ${imnodes_SOURCE_DIR}
+)
+target_link_libraries(imnodes PUBLIC imgui_lib)
+
+# -------------------
+# Create executable
+# -------------------
+add_executable(${PROJECT_NAME}
+        src/main.cpp
+        src/Window.cpp
+        src/NodeGraph.cpp
+        src/UiManager.cpp
+        src/Pin.cpp
+        src/Node.cpp
+        src/EditorContext.cpp
+        src/OutputImage.cpp
+        include/Window.h
+        include/Utils.h
+        include/UiManager.h
+        include/Pin.h
+        include/Node.h
+        include/NodeGraph.h
+        include/Command.h
+        include/EditorContext.h
+        include/OutputImage.h
+)
 
 # -------------------
 # Include directories
 # -------------------
 target_include_directories(${PROJECT_NAME} PRIVATE
-        ${imgui_SOURCE_DIR}
-        ${imgui_SOURCE_DIR}/backends
-        ${imnodes_SOURCE_DIR}
+        include
 )
 
 # -------------------
 # Link libraries
 # -------------------
 target_link_libraries(${PROJECT_NAME} PRIVATE
-        glfw
-        glad
+        imgui_lib
         imnodes
         ${CMAKE_DL_LIBS}
 )
